@@ -1,0 +1,4 @@
+.vscode/
+vaxctl
+*.yaml
+*.json
