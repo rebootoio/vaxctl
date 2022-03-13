@@ -7,7 +7,7 @@ require (
 	github.com/charmbracelet/bubbletea v0.19.3
 	github.com/charmbracelet/lipgloss v0.4.0
 	github.com/dustin/go-humanize v1.0.0 // indirect
-	github.com/evertras/bubble-table v0.8.1
+	github.com/evertras/bubble-table v0.8.4
 	github.com/ghodss/yaml v1.0.0
 	github.com/jedib0t/go-pretty/v6 v6.2.7
 	github.com/kataras/tablewriter v0.0.0-20180708051242-e063d29b7c23 // indirect
