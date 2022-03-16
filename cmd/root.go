@@ -17,9 +17,10 @@ var interactive bool
 
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
-	Use:   "vaxctl",
-	Short: "vaxctl is used for interacting with the rebooto vaxiin API",
-	Long:  `vaxctl is a CLI that allows creating/deleting/updating objects in the Rebooto vaxiin server`,
+	Use:     "vaxctl",
+	Short:   "vaxctl is used for interacting with the rebooto vaxiin API",
+	Long:    `vaxctl is a CLI that allows creating/deleting/updating objects in the Rebooto vaxiin server`,
+	Version: "DEV-VERSION-0.0",
 }
 
 // Execute adds all child commands to the root command and sets flags appropriately.
