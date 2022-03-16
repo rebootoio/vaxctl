@@ -45,7 +45,7 @@ func PrintStates(id string, stateType string, deviceUid string, regex string, ve
 	} else {
 		if output != "json" && output != "yaml" && !verbose {
 			for idx, state := range states {
-				if len(states[0].OcrText) > 100 {
+				if len(states[idx].OcrText) > 100 {
 					states[idx].OcrText = state.OcrText[:100] + "..."
 				}
 			}
@@ -130,6 +130,13 @@ func GenerateState(filename string, mandatoryFlag bool, commentsFlag bool) error
 			Type:      "string",
 			Desc:      "base64 string of the screenshot image",
 			Mandatory: true,
+		},
+		{
+			Name:         "resolved",
+			Type:         "boolean",
+			Desc:         "Should the state be resolved",
+			Mandatory:    false,
+			DefaultValue: false,
 		},
 	}
 	return GenerateResource(props, filename, mandatoryFlag, commentsFlag)
