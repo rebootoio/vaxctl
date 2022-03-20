@@ -574,6 +574,14 @@ func (m *RuleModel) updateRegex(regexString string) error {
 func createRegexAndColorOcrText(regexString string, ignoreCase bool, ocrText string) (string, error) {
 	var regex *regexp.Regexp
 	var err error
+
+	newLineCount := strings.Count(regexString, "\\n")
+
+	// if we have newline in regex we separate them to match groups
+	if newLineCount > 0 {
+		regexString = fmt.Sprintf("(%s)", strings.ReplaceAll(regexString, "\\n", ")\\n("))
+	}
+
 	if ignoreCase {
 		regex, err = regexp.Compile("(?i)" + regexString)
 	} else {
@@ -582,7 +590,21 @@ func createRegexAndColorOcrText(regexString string, ignoreCase bool, ocrText str
 	if err != nil {
 		return ocrText, err
 	}
-	return regex.ReplaceAllString(ocrText, common.OcrMatchedTextStyle.Render("${0}")), nil
+
+	var parsedOcrText string
+	if newLineCount > 0 {
+		replString := common.OcrMatchedTextStyle.Render("${1}")
+		// for every newline we add a \n + coloring the match group
+		for i := 2; i < newLineCount+2; i++ {
+			replString += "\n" + common.OcrMatchedTextStyle.Render(fmt.Sprintf("${%d}", i))
+		}
+		parsedOcrText = regex.ReplaceAllString(ocrText, replString)
+
+	} else {
+		parsedOcrText = regex.ReplaceAllString(ocrText, common.OcrMatchedTextStyle.Render("${0}"))
+	}
+
+	return parsedOcrText, nil
 }
 
 func fetchRule(ruleName string) (string, string, []string, bool, bool, string, error) {
