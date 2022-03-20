@@ -46,7 +46,7 @@ jobs:
         go-version: 1.17
 
     - name: Update version number
-      run: sed -i 's?DEV-VERSION-0.0?${{ github.ref_name }}?' cmd/root.go
+      run: sed -i '' 's?DEV-VERSION-0.0?${{ github.ref_name }}?' cmd/root.go
 
     - name: Build
       run: go build
