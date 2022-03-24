@@ -12,15 +12,16 @@ type DevicesResponse struct {
 }
 
 type Device struct {
-	UID                string `json:"uid" yaml:"uid" header:"UID"`
-	IpmiIp             string `json:"ipmi_ip" yaml:"ipmi_ip" header:"IPMI IP"`
-	CredsName          string `json:"creds_name,omitempty" yaml:"creds_name,omitempty" header:"Creds Name"`
-	Model              string `json:"model" yaml:"model" header:"Model"`
-	Zombie             bool   `json:"zombie" yaml:"zombie" header:"Zombie"`
-	AgentVersion       string `json:"agent_version,omitempty" yaml:"agent_version,omitempty" header:"Agent Version"`
-	HeartbeatTimestamp string `json:"heartbeat_timestamp,omitempty" yaml:"heartbeat_timestamp,omitempty" header:"Last Heartbeat"`
-	LastUpdated        string `json:"last_updated,omitempty" yaml:"last_updated,omitempty"`
-	CreatedAt          string `json:"created_at,omitempty" yaml:"created_at,omitempty"`
+	UID                string            `json:"uid" yaml:"uid" header:"UID"`
+	IpmiIp             string            `json:"ipmi_ip" yaml:"ipmi_ip" header:"IPMI IP"`
+	CredsName          string            `json:"creds_name,omitempty" yaml:"creds_name,omitempty" header:"Creds Name"`
+	Model              string            `json:"model" yaml:"model" header:"Model"`
+	Zombie             bool              `json:"zombie" yaml:"zombie" header:"Zombie"`
+	Metadata           map[string]string `json:"metadata" yaml:"metadata" header:"Metadata"`
+	AgentVersion       string            `json:"agent_version,omitempty" yaml:"agent_version,omitempty" header:"Agent Version"`
+	HeartbeatTimestamp string            `json:"heartbeat_timestamp,omitempty" yaml:"heartbeat_timestamp,omitempty" header:"Last Heartbeat"`
+	LastUpdated        string            `json:"last_updated,omitempty" yaml:"last_updated,omitempty"`
+	CreatedAt          string            `json:"created_at,omitempty" yaml:"created_at,omitempty"`
 }
 
 func PrintDevices(name string, output string) error {
@@ -116,6 +117,13 @@ func GenerateDevice(filename string, mandatoryFlag bool, commentsFlag bool) erro
 			Name:         "zombie",
 			Type:         "boolean",
 			Desc:         "Whether the device will be a zombie",
+			DefaultValue: false,
+			Mandatory:    false,
+		},
+		{
+			Name:         "metadata",
+			Type:         "object",
+			Desc:         "key value of device metadata",
 			DefaultValue: false,
 			Mandatory:    false,
 		},
