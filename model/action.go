@@ -178,6 +178,12 @@ List of special keys:
 			AdditionalData: wrap.String(fmt.Sprintf(keyStrokeAdditionalData, strings.Join(specialKeys, ", ")), 100),
 			Example:        "Keys.Control+c;exit;Keys.Enter",
 		},
+		{
+			ActionType:     "request",
+			StringValue:    "URI for GET request",
+			AdditionalData: "must start with protocol",
+			Example:        "http://myservice:8080/resolve?uid={device::uid}",
+		},
 	}
 
 	var rowsData [][]table.Row
