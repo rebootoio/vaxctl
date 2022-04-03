@@ -26,7 +26,7 @@ func GetScreenshot(id string, deviceUID string, filename string) error {
 			return err
 		}
 	} else {
-		file, err := ioutil.TempFile("", "vaxctl-screenshot")
+		file, err := ioutil.TempFile("", "vaxctl-screenshot*.png")
 		if err != nil {
 			return err
 		}
