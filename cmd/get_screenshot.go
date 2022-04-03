@@ -40,8 +40,7 @@ func init() {
 	getCmd.AddCommand(getScreenshotCmd)
 	getScreenshotCmd.Flags().StringVarP(&name, "id", "i", "", "id of the state")
 	getScreenshotCmd.RegisterFlagCompletionFunc("id", model.GetStateIdsForCompletion)
-	getScreenshotCmd.Flags().StringVarP(&filename, "filename", "f", "", "output file for screenshot")
+	getScreenshotCmd.Flags().StringVarP(&filename, "filename", "f", "", "output file for screenshot (if non provided it will open it)")
 	getScreenshotCmd.Flags().StringVarP(&deviceUid, "device", "d", "", "get states for specific device (if not set all are returned)")
 	getScreenshotCmd.RegisterFlagCompletionFunc("device", model.GetDeviceNamesForCompletion)
-	getScreenshotCmd.MarkFlagRequired("filename")
 }
