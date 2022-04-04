@@ -48,7 +48,7 @@ Download the sample configuration file locally
 ```
 wget https://raw.githubusercontent.com/rebootoio/vaxctl/main/config-example.yaml -O $HOME/.vaxctl.yaml
 ```
-Edit the file and change the `url` so that it will  point to your vaxiin server
+Edit the file and change the `url` so that it points to your vaxiin server
 
 Start using the cli
 ```
