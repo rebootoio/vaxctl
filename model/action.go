@@ -190,7 +190,21 @@ List of special keys:
 		}
 		rowsData = append(rowsData, rows)
 	}
-	helpers.PrintTableWithBorders(rowsData)
+
+	helpers.PrintTableWithBorders(rowsData, "")
+	attributesTableTitle := "You can use a device's attributes in the action data string.\nAvailable attributes:"
+	attributesTableHeader := []table.Row{
+		{"BASE KEY", "NESTED KEY", "DEFINED BY", "DESCRIPTION", "USAGE"},
+	}
+	attributesTableRows := []table.Row{
+		{"device", "uid", "System", "the device's UID", "{device::uid}"},
+		{"device", "ipmi_ip", "System", "the device's ipmi IP", "{device::ipmi_ip}"},
+		{"device", "model", "System", "the device's model", "{device::model}"},
+		{"cred", "username", "System", "the device's cred username", "{cred::username}"},
+		{"cred", "password", "System", "the device's cred password", "{cred::password}"},
+		{"metadata", "*", "User", "the value of the nested key from the device's metadata", "{metadata::ANY_KEY}"},
+	}
+	helpers.PrintTableWithBorders([][]table.Row{attributesTableHeader, attributesTableRows}, attributesTableTitle)
 	return nil
 }
 

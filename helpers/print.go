@@ -15,13 +15,14 @@ func PrintTable(data interface{}) {
 	printer.Print(data)
 }
 
-func PrintTableWithBorders(data [][]table.Row) {
+func PrintTableWithBorders(data [][]table.Row, title string) {
 	t := table.NewWriter()
-	t.SetStyle(table.StyleLight)
-	t.SetOutputMirror(os.Stdout)
+	t.SetTitle(title)
 	for _, rows := range data {
 		t.AppendRows(rows)
 		t.AppendSeparator()
 	}
+	t.SetStyle(table.StyleLight)
+	t.SetOutputMirror(os.Stdout)
 	t.Render()
 }
