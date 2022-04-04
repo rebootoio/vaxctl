@@ -21,7 +21,12 @@ Examples:
   vaxctl edit cred -n CRED_NAME`,
 	Args: cobra.NoArgs,
 	Run: func(cmd *cobra.Command, args []string) {
-		err := tui.EditCred(name)
+		_, err := model.GetCreds(name)
+		if err != nil {
+			fmt.Println(err)
+			os.Exit(1)
+		}
+		err = tui.EditCred(name)
 		if err != nil {
 			fmt.Println(err)
 			os.Exit(1)
