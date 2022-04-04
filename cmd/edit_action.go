@@ -21,7 +21,12 @@ Examples:
   vaxctl edit action -n ACTION_NAME`,
 	Args: cobra.NoArgs,
 	Run: func(cmd *cobra.Command, args []string) {
-		err := tui.EditAction(name)
+		_, err := model.GetActions(name)
+		if err != nil {
+			fmt.Println(err)
+			os.Exit(1)
+		}
+		err = tui.EditAction(name)
 		if err != nil {
 			fmt.Println(err)
 			os.Exit(1)

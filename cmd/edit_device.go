@@ -21,7 +21,12 @@ Examples:
   vaxctl edit device -n DEVICE_UID`,
 	Args: cobra.NoArgs,
 	Run: func(cmd *cobra.Command, args []string) {
-		err := tui.EditDevice(name)
+		_, err := model.GetDevices(name)
+		if err != nil {
+			fmt.Println(err)
+			os.Exit(1)
+		}
+		err = tui.EditDevice(name)
 		if err != nil {
 			fmt.Println(err)
 			os.Exit(1)
