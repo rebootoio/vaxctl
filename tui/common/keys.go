@@ -101,6 +101,21 @@ func (k keycomboListKeyMap) FullHelp() [][]key.Binding {
 	}
 }
 
+type keyValueListKeyMap struct {
+	EditItemKey   key.Binding
+	EditItemValue key.Binding
+	RemoveItem    key.Binding
+	AddItem       key.Binding
+}
+
+func (k keyValueListKeyMap) ShortHelp() []key.Binding { return nil }
+func (k keyValueListKeyMap) FullHelp() [][]key.Binding {
+	return [][]key.Binding{
+		{k.AddItem, k.RemoveItem},
+		{k.EditItemKey, k.EditItemValue},
+	}
+}
+
 type tableKeyMap struct {
 	RowDown key.Binding
 	RowUp   key.Binding
@@ -304,6 +319,24 @@ var (
 		AddSequenceItem: key.NewBinding(
 			key.WithKeys("c"),
 			key.WithHelp("c", "add character"),
+		),
+		RemoveItem: key.NewBinding(
+			key.WithKeys("r"),
+			key.WithHelp("r", "remove item"),
+		),
+	}
+	KeyValueListKeys = keyValueListKeyMap{
+		EditItemKey: key.NewBinding(
+			key.WithKeys("k"),
+			key.WithHelp("k", "edit item key"),
+		),
+		EditItemValue: key.NewBinding(
+			key.WithKeys("v"),
+			key.WithHelp("v", "edit item value"),
+		),
+		AddItem: key.NewBinding(
+			key.WithKeys("a"),
+			key.WithHelp("a", "add item"),
 		),
 		RemoveItem: key.NewBinding(
 			key.WithKeys("r"),

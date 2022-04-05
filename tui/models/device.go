@@ -6,6 +6,7 @@ import (
 	"net"
 	"os"
 	"strconv"
+	"strings"
 	"vaxctl/api"
 	"vaxctl/helpers"
 	"vaxctl/model"
@@ -20,11 +21,12 @@ import (
 )
 
 const (
-	deviceUIDOption    = "UID"
-	deviceIPOption     = "IPMI IP"
-	deviceCredsOption  = "Creds Name"
-	deviceModelOption  = "Model"
-	deviceZombieOption = "Zombie"
+	deviceUIDOption      = "UID"
+	deviceIPOption       = "IPMI IP"
+	deviceCredsOption    = "Creds Name"
+	deviceModelOption    = "Model"
+	deviceZombieOption   = "Zombie"
+	deviceMetadataOption = "Metadata"
 
 	useDefault = "default"
 )
@@ -35,6 +37,7 @@ type DeviceModel struct {
 	CredsName          string
 	Model              string
 	Zombie             bool
+	Metadata           map[string]string
 	views              []string
 	CurrentView        string
 	DynamicView        string
@@ -47,6 +50,7 @@ type DeviceModel struct {
 	ipmiIPInput        editors.TextInputEditorModel
 	credsSelection     editors.SimpleListEditorModel
 	modelInput         editors.TextInputEditorModel
+	metadataInput      editors.KeyValueEditorModel
 	deviceResourceData blocks.ResourceDataModel
 	yamlViewer         blocks.SmallViewerModel
 	tableModel         blocks.TableModel
@@ -69,8 +73,9 @@ func InitialDeviceModel(interactiveData common.InteractiveData) DeviceModel {
 
 	var ipmiIP, credsName, model string
 	var isZombie bool
+	var metadata map[string]string
 	if deviceUID != "" {
-		ipmiIP, credsName, model, isZombie, err = fetchDevice(deviceUID)
+		ipmiIP, credsName, model, isZombie, metadata, err = fetchDevice(deviceUID)
 		if err != nil {
 			statusMessage = getStatusMessage(err.Error(), true)
 		}
@@ -88,6 +93,7 @@ func InitialDeviceModel(interactiveData common.InteractiveData) DeviceModel {
 	ipmiIPInput.SetValidationFunc(func(input string) bool { return net.ParseIP(input) != nil })
 	credsSelection := editors.NewSimpleListEditor("Choose Credentials Name:", append([]string{useDefault}, credNames...), credsName)
 	modelInput := editors.NewTextInputEditor("Enter Device Model:", model)
+	metadataInput := editors.NewKeyValueEditorModel("Metadata Key Value list:", metadata)
 	yamlViewer := blocks.NewSmallViewerModel()
 
 	deviceResourceData := blocks.NewResourceDataModel("Device", 0, 0, []blocks.ResourceItem{
@@ -116,14 +122,20 @@ func InitialDeviceModel(interactiveData common.InteractiveData) DeviceModel {
 			Value:     strconv.FormatBool(isZombie),
 			Toggleble: true,
 		},
+		{
+			Title:      deviceMetadataOption,
+			Value:      parseMetadataToString(metadata),
+			Selectable: true,
+		},
 	})
 
 	tableColumns := []blocks.TableColumn{
 		{Title: deviceUIDOption, Size: 2},
 		{Title: deviceIPOption, Size: 2},
 		{Title: deviceCredsOption, Size: 1},
-		{Title: deviceModelOption, Size: 2},
+		{Title: deviceModelOption, Size: 1},
 		{Title: deviceZombieOption, Size: 1},
+		{Title: deviceMetadataOption, Size: 5},
 	}
 	rows, err := generateDeviceTableRows()
 	if err != nil {
@@ -137,6 +149,7 @@ func InitialDeviceModel(interactiveData common.InteractiveData) DeviceModel {
 		CredsName:          credsName,
 		Model:              model,
 		Zombie:             isZombie,
+		Metadata:           metadata,
 		views:              views,
 		CurrentView:        startCurrentView,
 		DynamicView:        "",
@@ -145,6 +158,7 @@ func InitialDeviceModel(interactiveData common.InteractiveData) DeviceModel {
 		credsSelection:     credsSelection,
 		deviceResourceData: deviceResourceData,
 		modelInput:         modelInput,
+		metadataInput:      metadataInput,
 		mainList:           mainList,
 		yamlNameInput:      yamlNameInput,
 		help:               help,
@@ -165,6 +179,7 @@ func (m DeviceModel) Update(msg tea.Msg) (DeviceModel, tea.Cmd) {
 		rowHeight, mainWidth, dataWidth, dynamicWidth, viewerHeight := getSizing(m.width, m.height)
 
 		m.credsSelection.SetSize(dynamicWidth, rowHeight)
+		m.metadataInput.SetSize(dynamicWidth, rowHeight)
 		m.deviceResourceData.SetSize(dataWidth, rowHeight)
 		m.mainList.SetSize(mainWidth, rowHeight)
 		m.tableModel.SetSize(m.width, viewerHeight)
@@ -203,6 +218,10 @@ func (m DeviceModel) Update(msg tea.Msg) (DeviceModel, tea.Cmd) {
 			case deviceModelOption:
 				m.Model = m.modelInput.Value()
 				m.deviceResourceData.SetValue(deviceModelOption, m.Model)
+
+			case deviceMetadataOption:
+				m.Metadata = m.metadataInput.Value()
+				m.deviceResourceData.SetValue(deviceMetadataOption, parseMetadataToString(m.Metadata))
 
 			case yamlSaveOption:
 				path := common.GetPath(m.yamlNameInput.Value())
@@ -244,11 +263,13 @@ func (m DeviceModel) Update(msg tea.Msg) (DeviceModel, tea.Cmd) {
 			m.CredsName = ""
 			m.Model = ""
 			m.Zombie = false
+			m.Metadata = nil
 			m.deviceResourceData.SetValue(deviceUIDOption, m.DeviceUID)
 			m.deviceResourceData.SetValue(deviceIPOption, m.IpmiIP)
 			m.deviceResourceData.SetValue(deviceCredsOption, m.CredsName)
 			m.deviceResourceData.SetValue(deviceModelOption, m.Model)
 			m.deviceResourceData.SetValue(deviceZombieOption, strconv.FormatBool(m.Zombie))
+			m.deviceResourceData.SetValue(deviceMetadataOption, parseMetadataToString(m.Metadata))
 			m.DynamicView = ""
 			m.CurrentView = viewerView
 		case backAction:
@@ -264,15 +285,19 @@ func (m DeviceModel) Update(msg tea.Msg) (DeviceModel, tea.Cmd) {
 		m.CredsName = currentTableData[deviceCredsOption].(string)
 		m.Model = currentTableData[deviceModelOption].(string)
 		m.Zombie = currentTableData[deviceZombieOption].(bool)
+		metadata := currentTableData[deviceMetadataOption].(string)
+		m.Metadata = parseMetadataFromString(metadata)
 		m.deviceResourceData.SetValue(deviceUIDOption, m.DeviceUID)
 		m.deviceResourceData.SetValue(deviceIPOption, m.IpmiIP)
 		m.deviceResourceData.SetValue(deviceCredsOption, m.CredsName)
 		m.deviceResourceData.SetValue(deviceModelOption, m.Model)
 		m.deviceResourceData.SetValue(deviceZombieOption, strconv.FormatBool(m.Zombie))
+		m.deviceResourceData.SetValue(deviceMetadataOption, metadata)
 		m.deviceUIDInput.SetValue(m.DeviceUID)
 		m.ipmiIPInput.SetValue(m.IpmiIP)
 		m.credsSelection.SetValue(m.CredsName)
 		m.modelInput.SetValue(m.Model)
+		m.metadataInput.SetValue(m.Metadata)
 		m.CurrentView = dataView
 		m.DynamicView = ""
 
@@ -323,6 +348,9 @@ func (m DeviceModel) Update(msg tea.Msg) (DeviceModel, tea.Cmd) {
 		case deviceModelOption:
 			m.modelInput, cmd = m.modelInput.Update(msg)
 			cmds = append(cmds, cmd)
+		case deviceMetadataOption:
+			m.metadataInput, cmd = m.metadataInput.Update(msg)
+			cmds = append(cmds, cmd)
 		case yamlSaveOption:
 			m.yamlNameInput, cmd = m.yamlNameInput.Update(msg)
 			cmds = append(cmds, cmd)
@@ -358,6 +386,8 @@ func (m DeviceModel) View() string {
 		dynamicText = m.credsSelection.View()
 	case deviceModelOption:
 		dynamicText = m.modelInput.View()
+	case deviceMetadataOption:
+		dynamicText = m.metadataInput.View()
 	case yamlViewerOption:
 		dynamicText = m.yamlViewer.View()
 	case yamlSaveOption:
@@ -401,6 +431,7 @@ func (m DeviceModel) generateResource() model.Device {
 		CredsName: m.CredsName,
 		Model:     m.Model,
 		Zombie:    m.Zombie,
+		Metadata:  m.Metadata,
 	}
 }
 
@@ -422,11 +453,12 @@ func generateDeviceTableRows() ([]table.Row, error) {
 	var tableRows []table.Row
 	for _, device := range allDevices {
 		tableRow := table.NewRow(table.RowData{
-			deviceUIDOption:    device.UID,
-			deviceIPOption:     device.IpmiIp,
-			deviceCredsOption:  device.CredsName,
-			deviceModelOption:  device.Model,
-			deviceZombieOption: device.Zombie,
+			deviceUIDOption:      device.UID,
+			deviceIPOption:       device.IpmiIp,
+			deviceCredsOption:    device.CredsName,
+			deviceModelOption:    device.Model,
+			deviceZombieOption:   device.Zombie,
+			deviceMetadataOption: parseMetadataToString(device.Metadata),
 		})
 		tableRows = append(tableRows, tableRow)
 	}
@@ -434,14 +466,34 @@ func generateDeviceTableRows() ([]table.Row, error) {
 	return tableRows, nil
 }
 
-func fetchDevice(deviceUID string) (string, string, string, bool, error) {
+func fetchDevice(deviceUID string) (string, string, string, bool, map[string]string, error) {
 	responseData, err := api.GetResourceByUID("device", deviceUID)
 	if err != nil {
-		return "", "", "", false, err
+		return "", "", "", false, nil, err
 	}
 	var devicesResponse model.DevicesResponse
 	json.Unmarshal(responseData, &devicesResponse)
 
 	device := devicesResponse.Devices[0]
-	return device.IpmiIp, device.CredsName, device.Model, device.Zombie, nil
+	return device.IpmiIp, device.CredsName, device.Model, device.Zombie, device.Metadata, nil
+}
+
+func parseMetadataToString(metadata map[string]string) string {
+	var metadataList []string
+	for key, value := range metadata {
+		metadataList = append(metadataList, fmt.Sprintf("%s = %s", key, value))
+	}
+	return strings.Join(metadataList, ", ")
+}
+
+func parseMetadataFromString(metadata string) map[string]string {
+	metadataMap := make(map[string]string)
+	if metadata != "" {
+		metadataList := strings.Split(metadata, ", ")
+		for _, metadataItem := range metadataList {
+			itemData := strings.Split(metadataItem, " = ")
+			metadataMap[itemData[0]] = itemData[1]
+		}
+	}
+	return metadataMap
 }

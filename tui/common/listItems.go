@@ -98,3 +98,33 @@ func (d TypedItemDelegate) Render(w io.Writer, m list.Model, index int, listItem
 
 	fmt.Fprintf(w, fn(str))
 }
+
+type KeyValueItem struct {
+	Key   string
+	Value string
+}
+
+func (i KeyValueItem) FilterValue() string { return "" }
+
+type KeyValueItemDelegate struct{}
+
+func (d KeyValueItemDelegate) Height() int                               { return 1 }
+func (d KeyValueItemDelegate) Spacing() int                              { return 0 }
+func (d KeyValueItemDelegate) Update(msg tea.Msg, m *list.Model) tea.Cmd { return nil }
+func (d KeyValueItemDelegate) Render(w io.Writer, m list.Model, index int, listItem list.Item) {
+	i, ok := listItem.(KeyValueItem)
+	if !ok {
+		return
+	}
+
+	str := fmt.Sprintf("%s = %s", i.Key, i.Value)
+
+	fn := ItemStyle.Render
+	if index == m.Index() {
+		fn = func(s string) string {
+			return SelectedItemStyle.Render("> " + s)
+		}
+	}
+
+	fmt.Fprintf(w, fn(str))
+}

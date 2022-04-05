@@ -14,11 +14,11 @@ import (
 )
 
 var (
-	listMode = "list mode"
-	itemMode = "item mode"
+	keyComboListMode = "list mode"
+	keyComboItemMode = "item mode"
 
-	itemCreation     = "item create"
-	itemModification = "item modification"
+	keyComboItemCreation     = "item create"
+	keyComboItemModification = "item modification"
 
 	specialType  = "special type"
 	sequenceType = "sequence type"
@@ -65,7 +65,7 @@ func NewActionKeycomboEditorModel(title string, itemList []string, specialKeys [
 	help.ShowAll = true
 
 	return ActionKeycomboEditorModel{
-		mode:          listMode,
+		mode:          keyComboListMode,
 		actionList:    actionList,
 		sequenceInput: sequenceInput,
 		specialInput:  specialInput,
@@ -88,7 +88,7 @@ func (m *ActionKeycomboEditorModel) SetValue(itemList []string) {
 }
 
 func (m *ActionKeycomboEditorModel) EdittingMode() bool {
-	return m.mode == itemMode
+	return m.mode == keyComboItemMode
 }
 
 func (m *ActionKeycomboEditorModel) SetSize(width int, height int) {
@@ -111,7 +111,7 @@ func (m ActionKeycomboEditorModel) Update(msg tea.Msg) (ActionKeycomboEditorMode
 	var cmds []tea.Cmd
 
 	switch m.mode {
-	case listMode:
+	case keyComboListMode:
 		switch msg := msg.(type) {
 		case tea.KeyMsg:
 			switch {
@@ -139,8 +139,8 @@ func (m ActionKeycomboEditorModel) Update(msg tea.Msg) (ActionKeycomboEditorMode
 				item, ok := m.actionList.SelectedItem().(common.TypedItem)
 				if ok {
 					m.selectedItemIndex = m.actionList.Index()
-					m.selectedItemMode = itemModification
-					m.mode = itemMode
+					m.selectedItemMode = keyComboItemModification
+					m.mode = keyComboItemMode
 					switch item.Type {
 					case specialType:
 						m.selectedItemType = specialType
@@ -154,8 +154,8 @@ func (m ActionKeycomboEditorModel) Update(msg tea.Msg) (ActionKeycomboEditorMode
 				}
 
 			case key.Matches(msg, common.KeycomboListKeys.AddSpecialItem, common.KeycomboListKeys.AddSequenceItem):
-				m.selectedItemMode = itemCreation
-				m.mode = itemMode
+				m.selectedItemMode = keyComboItemCreation
+				m.mode = keyComboItemMode
 				if key.Matches(msg, common.KeycomboListKeys.AddSpecialItem) {
 					m.selectedItemType = specialType
 					m.specialInput.SetValue("")
@@ -168,13 +168,13 @@ func (m ActionKeycomboEditorModel) Update(msg tea.Msg) (ActionKeycomboEditorMode
 		m.actionList, cmd = m.actionList.Update(msg)
 		cmds = append(cmds, cmd)
 
-	case itemMode:
+	case keyComboItemMode:
 		if !(m.selectedItemType == specialType && m.specialInput.EdittingMode()) {
 			switch msg := msg.(type) {
 			case tea.KeyMsg:
 				switch {
 				case key.Matches(msg, common.ConfirmKeys.ApplyData):
-					m.mode = listMode
+					m.mode = keyComboListMode
 					var newValue string
 					switch m.selectedItemType {
 					case sequenceType:
@@ -183,16 +183,16 @@ func (m ActionKeycomboEditorModel) Update(msg tea.Msg) (ActionKeycomboEditorMode
 						newValue = m.specialInput.Value()
 					}
 					switch m.selectedItemMode {
-					case itemCreation:
+					case keyComboItemCreation:
 						newIndex := len(m.actionList.Items())
 						cmd = m.actionList.InsertItem(newIndex, common.TypedItem{Value: newValue, Type: m.selectedItemType})
 						m.actionList.Select(newIndex)
-					case itemModification:
+					case keyComboItemModification:
 						cmd = m.actionList.SetItem(m.selectedItemIndex, common.TypedItem{Value: newValue, Type: m.selectedItemType})
 					}
 					cmds = append(cmds, cmd)
 				case key.Matches(msg, common.ConfirmKeys.ExitMode):
-					m.mode = listMode
+					m.mode = keyComboListMode
 				}
 			}
 		}
@@ -212,13 +212,13 @@ func (m ActionKeycomboEditorModel) Update(msg tea.Msg) (ActionKeycomboEditorMode
 func (m ActionKeycomboEditorModel) View() string {
 	var str string
 	switch m.mode {
-	case listMode:
+	case keyComboListMode:
 		str = lipgloss.JoinHorizontal(
 			lipgloss.Center,
 			m.actionList.View(),
 			lipgloss.PlaceHorizontal(m.help.Width, lipgloss.Right, m.help.View(common.KeycomboListKeys)))
 
-	case itemMode:
+	case keyComboItemMode:
 		switch m.selectedItemType {
 		case sequenceType:
 			str = fmt.Sprintf("Enter key sequence:\n%s", m.sequenceInput.View())
