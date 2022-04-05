@@ -123,7 +123,7 @@ func GenerateDevice(filename string, mandatoryFlag bool, commentsFlag bool) erro
 		{
 			Name:         "metadata",
 			Type:         "object",
-			Desc:         "key value of device metadata",
+			Desc:         "key value of device metadata (can be used in action data)",
 			DefaultValue: false,
 			Mandatory:    false,
 		},

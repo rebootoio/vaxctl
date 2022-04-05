@@ -17,6 +17,7 @@ var (
 	ipmitoolType = "ipmitool"
 	powerType    = "power"
 	sleepType    = "sleep"
+	requestType  = "request"
 )
 
 type ActionDataEditorModel struct {
@@ -25,6 +26,7 @@ type ActionDataEditorModel struct {
 	powerList     list.Model
 	waitInput     textinput.Model
 	keycomboInput ActionKeycomboEditorModel
+	requestInput  textinput.Model
 	helpText      string
 }
 
@@ -51,6 +53,11 @@ func NewActionDataEditor(actionType string, actionData string, powerOptions []st
 	waitInput.CharLimit = 16
 	waitInput.Width = 24
 
+	requestInput := textinput.New()
+	requestInput.Focus()
+	requestInput.CharLimit = 128
+	requestInput.Width = 64
+
 	help := common.GetHelpModel()
 
 	var keycomboList []string
@@ -68,6 +75,8 @@ func NewActionDataEditor(actionType string, actionData string, powerOptions []st
 		}
 	case sleepType:
 		waitInput.SetValue(actionData)
+	case requestType:
+		requestInput.SetValue(actionData)
 	}
 
 	keycomboInput := NewActionKeycomboEditorModel("Key Combo list", keycomboList, specialKeys)
@@ -77,6 +86,7 @@ func NewActionDataEditor(actionType string, actionData string, powerOptions []st
 		powerList:     powerList,
 		waitInput:     waitInput,
 		keycomboInput: keycomboInput,
+		requestInput:  requestInput,
 		helpText:      help.View(common.ConfirmKeys),
 	}
 }
@@ -96,6 +106,8 @@ func (m *ActionDataEditorModel) SetValue(value string) {
 		}
 	case sleepType:
 		m.waitInput.SetValue(value)
+	case requestType:
+		m.requestInput.SetValue(value)
 	}
 }
 
@@ -103,6 +115,7 @@ func (m *ActionDataEditorModel) SetSize(width int, height int) {
 	m.powerList.SetWidth(width / 2)
 	m.powerList.SetHeight(height - lipgloss.Height(m.helpText))
 	m.keycomboInput.SetSize(width, height-lipgloss.Height(m.helpText))
+	m.requestInput.Width = width - 6
 }
 
 func (m *ActionDataEditorModel) SetActionType(actionType string) {
@@ -121,6 +134,8 @@ func (m ActionDataEditorModel) Value() string {
 		value = string(item)
 	case sleepType:
 		value = m.waitInput.Value()
+	case requestType:
+		value = m.requestInput.Value()
 	}
 	return value
 }
@@ -167,10 +182,10 @@ func (m ActionDataEditorModel) Update(msg tea.Msg) (ActionDataEditorModel, tea.C
 					cmds = append(cmds, cmd)
 				}
 			}
-		default:
-			m.waitInput, cmd = m.waitInput.Update(msg)
-			cmds = append(cmds, cmd)
 		}
+	case requestType:
+		m.requestInput, cmd = m.requestInput.Update(msg)
+		cmds = append(cmds, cmd)
 	}
 
 	return m, tea.Batch(cmds...)
@@ -187,6 +202,8 @@ func (m ActionDataEditorModel) View() string {
 		dynamicText = m.powerList.View()
 	case sleepType:
 		dynamicText = fmt.Sprintf("Enter wait action data (in seconds):\n%s\nOnly numbers are allowed", m.waitInput.View())
+	case requestType:
+		dynamicText = fmt.Sprintf("Enter request URI:\n%s", m.requestInput.View())
 	default:
 		return "Action Type must be set to edit the data"
 	}
