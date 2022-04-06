@@ -35,4 +35,5 @@ func init() {
 	getCmd.AddCommand(getCredCmd)
 	getCredCmd.Flags().StringVarP(&name, "name", "n", "", "name of resource (if not set all are returned)")
 	getCredCmd.RegisterFlagCompletionFunc("name", model.GetCredNamesForCompletion)
+	getCredCmd.Flags().StringVarP(&output, "output", "o", "", "output format (default is table). One of: json|yaml")
 }

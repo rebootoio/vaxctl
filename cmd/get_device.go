@@ -35,4 +35,5 @@ func init() {
 	getCmd.AddCommand(getDeviceCmd)
 	getDeviceCmd.Flags().StringVarP(&name, "uid", "n", "", "uid of resource (if not set all are returned)")
 	getDeviceCmd.RegisterFlagCompletionFunc("uid", model.GetDeviceNamesForCompletion)
+	getDeviceCmd.Flags().StringVarP(&output, "output", "o", "", "output format (default is table). One of: json|yaml")
 }

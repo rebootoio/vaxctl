@@ -35,4 +35,5 @@ func init() {
 	getCmd.AddCommand(getRuleCmd)
 	getRuleCmd.Flags().StringVarP(&name, "name", "n", "", "name of resource (if not set all are returned)")
 	getRuleCmd.RegisterFlagCompletionFunc("name", model.GetRuleNamesForCompletion)
+	getRuleCmd.Flags().StringVarP(&output, "output", "o", "", "output format (default is table). One of: json|yaml")
 }

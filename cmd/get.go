@@ -13,6 +13,4 @@ var getCmd = &cobra.Command{
 
 func init() {
 	rootCmd.AddCommand(getCmd)
-
-	getCmd.PersistentFlags().StringVarP(&output, "output", "o", "", "output format (default is table). One of: json|yaml")
 }

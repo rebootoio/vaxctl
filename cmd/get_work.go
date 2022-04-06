@@ -42,4 +42,5 @@ func init() {
 	getWorkCmd.Flags().BoolVarP(&latest, "latest", "l", false, "show only latest work")
 	getWorkCmd.Flags().StringVarP(&filename, "id", "i", "", "id of resource (if not set all are returned)")
 	getWorkCmd.RegisterFlagCompletionFunc("id", model.GetWorkIdsForCompletion)
+	getWorkCmd.Flags().StringVarP(&output, "output", "o", "", "output format (default is table). One of: json|yaml")
 }

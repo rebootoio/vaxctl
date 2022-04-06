@@ -49,4 +49,5 @@ func init() {
 	getStateCmd.RegisterFlagCompletionFunc("device", model.GetDeviceNamesForCompletion)
 	getStateCmd.Flags().StringVarP(&regex, "regex", "r", "", "get states by matching regex (if not set all are returned)")
 	getStateCmd.Flags().BoolVarP(&verbose, "verbose", "v", false, "show full OCR text")
+	getStateCmd.Flags().StringVarP(&output, "output", "o", "", "output format (default is table). One of: json|yaml")
 }
