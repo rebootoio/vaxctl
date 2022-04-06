@@ -21,10 +21,11 @@ import (
 )
 
 const (
-	credNameOption      = "Name"
-	credUsernameOption  = "Username"
-	credPasswordOption  = "Password"
-	credIsDefaultOption = "Default"
+	credNameOption             = "Name"
+	credUsernameOption         = "Username"
+	credPasswordOption         = "Password"
+	credOriginalPasswordOption = "Original Password"
+	credIsDefaultOption        = "Default"
 )
 
 type CredModel struct {
@@ -46,7 +47,6 @@ type CredModel struct {
 	yamlViewer             blocks.SmallViewerModel
 	tableModel             blocks.TableModel
 	hidePasswords          bool
-	credPasswords          map[string]string
 	defaultCredName        string
 	pendingDefaultCredName string
 	StatusMessage          string
@@ -112,7 +112,7 @@ func InitialCredModel(interactiveData common.InteractiveData) CredModel {
 		{Title: credPasswordOption, Size: 1},
 		{Title: credIsDefaultOption, Size: 1},
 	}
-	tableRows, credPasswords, defaultCredName, err := generateCredTableRows(true)
+	tableRows, defaultCredName, err := generateCredTableRows(true)
 	if err != nil {
 		statusMessage = getDisplayPassword(err.Error(), true)
 	}
@@ -136,7 +136,6 @@ func InitialCredModel(interactiveData common.InteractiveData) CredModel {
 		tableModel:       tableModel,
 		yamlViewer:       yamlViewer,
 		hidePasswords:    true,
-		credPasswords:    credPasswords,
 		defaultCredName:  defaultCredName,
 		StatusMessage:    statusMessage,
 	}
@@ -151,7 +150,7 @@ func (m CredModel) Update(msg tea.Msg) (CredModel, tea.Cmd) {
 		case key.Matches(msg, common.CredFooterKeys.ShowPasswords):
 			m.hidePasswords = !m.hidePasswords
 			m.credResourceData.SetValue(credPasswordOption, getDisplayPassword(m.Password, m.hidePasswords))
-			m.updateCreds()
+			m.updatePasswordsInTable()
 			if m.hidePasswords {
 				m.passwordInput.SetEchoMode(textinput.EchoPassword)
 			} else {
@@ -251,7 +250,7 @@ func (m CredModel) Update(msg tea.Msg) (CredModel, tea.Cmd) {
 		currentTableData := m.tableModel.GetCurrentRow().Data
 		m.CredName = currentTableData[credNameOption].(string)
 		m.Username = currentTableData[credUsernameOption].(string)
-		m.Password = m.credPasswords[m.CredName]
+		m.Password = currentTableData[credOriginalPasswordOption].(string)
 		displayPassword := getDisplayPassword(m.Password, m.hidePasswords)
 		m.credResourceData.SetValue(credNameOption, m.CredName)
 		m.credResourceData.SetValue(credUsernameOption, m.Username)
@@ -405,41 +404,50 @@ func (m CredModel) generateResource() model.Cred {
 }
 
 func (m *CredModel) updateCreds() {
-	tableRows, credPasswords, defaultCredName, err := generateCredTableRows(m.hidePasswords)
+	tableRows, defaultCredName, err := generateCredTableRows(m.hidePasswords)
 	if err != nil {
 		m.StatusMessage = getStatusMessage(err.Error(), true)
 	} else {
-		m.credPasswords = credPasswords
 		m.defaultCredName = defaultCredName
 		m.tableModel.SetRows(tableRows)
 	}
 }
 
-func generateCredTableRows(hidePasswords bool) ([]table.Row, map[string]string, string, error) {
+func (m *CredModel) updatePasswordsInTable() {
+	var tableRows []table.Row
+
+	for _, tableRow := range m.tableModel.GetRows() {
+		tableRowData := tableRow.Data
+		tableRowData[credPasswordOption] = getDisplayPassword(tableRowData[credOriginalPasswordOption].(string), m.hidePasswords)
+		tableRows = append(tableRows, table.NewRow(tableRowData))
+	}
+	m.tableModel.SetRows(tableRows)
+}
+
+func generateCredTableRows(hidePasswords bool) ([]table.Row, string, error) {
 	allCreds, err := model.GetCreds("")
-	credPasswords := make(map[string]string)
 	var defaultCredName string
 	if err != nil {
-		return nil, credPasswords, defaultCredName, err
+		return nil, defaultCredName, err
 	}
 
 	var tableRows []table.Row
 	for _, cred := range allCreds {
 		displayPassword := getDisplayPassword(cred.Password, hidePasswords)
 		tableRow := table.NewRow(table.RowData{
-			credNameOption:      cred.Name,
-			credUsernameOption:  cred.Username,
-			credPasswordOption:  displayPassword,
-			credIsDefaultOption: cred.IsDefault,
+			credNameOption:             cred.Name,
+			credUsernameOption:         cred.Username,
+			credPasswordOption:         displayPassword,
+			credOriginalPasswordOption: cred.Password,
+			credIsDefaultOption:        cred.IsDefault,
 		})
 		tableRows = append(tableRows, tableRow)
-		credPasswords[cred.Name] = cred.Password
 		if cred.IsDefault {
 			defaultCredName = cred.Name
 		}
 	}
 
-	return tableRows, credPasswords, defaultCredName, nil
+	return tableRows, defaultCredName, nil
 }
 
 func fetchCred(credName string) (string, string, error) {
