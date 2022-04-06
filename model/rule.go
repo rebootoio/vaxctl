@@ -13,7 +13,6 @@ type RulesResponse struct {
 
 type Rule struct {
 	Name        string   `json:"name" yaml:"name" header:"Name"`
-	StateId     int      `json:"state_id,omitempty" yaml:"state_id" header:"State ID"`
 	Regex       string   `json:"regex,omitempty" yaml:"regex" header:"Regex"`
 	Actions     []string `json:"actions,omitempty" yaml:"actions" header:"Actions"`
 	IgnoreCase  bool     `json:"ignore_case" yaml:"ignore_case" header:"Ignore Case"`
@@ -21,20 +20,39 @@ type Rule struct {
 	Position    int      `json:"position,omitempty" yaml:"position,omitempty" header:"Position"`
 	AfterRule   string   `json:"after_rule,omitempty" yaml:"after_rule,omitempty"`
 	BeforeRule  string   `json:"before_rule,omitempty" yaml:"before_rule,omitempty"`
+	Screenshot  string   `json:"screenshot,omitempty" yaml:"screenshot,omitempty"`
+	OcrText     string   `json:"ocr_text,omitempty" yaml:"ocr_text,omitempty"`
 	LastUpdated string   `json:"last_updated,omitempty" yaml:"last_updated,omitempty"`
 	CreatedAt   string   `json:"created_at,omitempty" yaml:"created_at,omitempty"`
 }
 
-func PrintRules(name string, output string) error {
+func PrintRules(name string, verbose bool, output string) error {
 	allRules, err := GetRules(name)
 	if err != nil {
 		return err
 	}
 	var reportObject interface{}
 	if name != "" {
-		reportObject = allRules[0]
+		if verbose {
+			reportObject = allRules[0]
+		} else {
+			rule := allRules[0]
+			rule.Screenshot = ""
+			rule.OcrText = ""
+			reportObject = rule
+		}
 	} else {
-		reportObject = allRules
+		if verbose {
+			reportObject = allRules
+		} else {
+			var rules []Rule
+			for _, rule := range allRules {
+				rule.Screenshot = ""
+				rule.OcrText = ""
+				rules = append(rules, rule)
+			}
+			reportObject = rules
+		}
 	}
 
 	switch output {
@@ -99,6 +117,9 @@ func GenerateRule(filename string, mandatoryFlag bool, commentsFlag bool) error 
 	afterRuleConstraint["enum"] = allRules
 	afterRuleConstraint["unique"] = "only one of [before_rule, after_rule] can be set"
 
+	stateOrScreenshotConstraint := make(map[string]interface{})
+	stateOrScreenshotConstraint["unique"] = "one of [state_id, screenshot] MUST be set (screenshot takes precedence)"
+
 	props := []helpers.PropInfo{
 		{
 			Name:      "name",
@@ -107,10 +128,18 @@ func GenerateRule(filename string, mandatoryFlag bool, commentsFlag bool) error 
 			Mandatory: true,
 		},
 		{
-			Name:      "state_id",
-			Type:      "integer",
-			Desc:      "ID of the state the rule was created from",
-			Mandatory: true,
+			Name:        "state_id",
+			Type:        "integer",
+			Desc:        "ID of the state from which to take the screenshot from",
+			Mandatory:   false,
+			Constraints: stateOrScreenshotConstraint,
+		},
+		{
+			Name:        "Screenshot",
+			Type:        "string",
+			Desc:        "base64 string of the screenshot image",
+			Mandatory:   false,
+			Constraints: stateOrScreenshotConstraint,
 		},
 		{
 			Name:      "regex",

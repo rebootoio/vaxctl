@@ -39,7 +39,7 @@ func (httpError *HttpError) Error() string {
 	message := fmt.Sprintf("Request returned %v status.", httpError.Status)
 	if len(httpError.Errors) > 0 {
 		for k, v := range httpError.Errors {
-			message += fmt.Sprintf("\nError: %v - %v", v, k)
+			message += fmt.Sprintf("\nError: %v - %v", k, v)
 		}
 	} else if httpError.Message != "" {
 		message += fmt.Sprintf("\nError: %v", httpError.Message)
@@ -64,13 +64,19 @@ func GetStatesByTypeAndDevice(stateType string, deviceUid string, regex string) 
 func GetScreenshotByStateId(stateId string) ([]byte, error) {
 	paramValues := url.Values{}
 	paramValues.Set("id", stateId)
-	return runQuery("state-screenshot/by-id", "GET", nil, paramValues)
+	return runQuery("screenshot/by-id", "GET", nil, paramValues)
 }
 
 func GetScreenshotByDeviceUID(deviceUid string) ([]byte, error) {
 	paramValues := url.Values{}
 	paramValues.Set("uid", deviceUid)
-	return runQuery("state-screenshot/by-device", "GET", nil, paramValues)
+	return runQuery("screenshot/by-device", "GET", nil, paramValues)
+}
+
+func GetScreenshotByRuleName(ruleName string) ([]byte, error) {
+	paramValues := url.Values{}
+	paramValues.Set("name", ruleName)
+	return runQuery("screenshot/by-rule", "GET", nil, paramValues)
 }
 
 func GetWorksByDevice(deviceUid string) ([]byte, error) {

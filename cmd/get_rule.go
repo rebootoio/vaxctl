@@ -23,7 +23,7 @@ Examples:
   vaxctl get rule -n RULE_NAME -o yaml`,
 	Args: cobra.NoArgs,
 	Run: func(cmd *cobra.Command, args []string) {
-		err := model.PrintRules(name, output)
+		err := model.PrintRules(name, verbose, output)
 		if err != nil {
 			fmt.Println(err)
 			os.Exit(1)
@@ -34,6 +34,7 @@ Examples:
 func init() {
 	getCmd.AddCommand(getRuleCmd)
 	getRuleCmd.Flags().StringVarP(&name, "name", "n", "", "name of resource (if not set all are returned)")
+	getRuleCmd.Flags().BoolVarP(&verbose, "verbose", "v", false, "include screenshot & ocr_text values in yaml/json")
 	getRuleCmd.RegisterFlagCompletionFunc("name", model.GetRuleNamesForCompletion)
 	getRuleCmd.Flags().StringVarP(&output, "output", "o", "", "output format (default is table). One of: json|yaml")
 }
