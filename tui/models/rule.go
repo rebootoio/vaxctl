@@ -22,16 +22,17 @@ import (
 
 const (
 	ruleColumnKeyName       = "Name"
-	ruleColumnKeyState      = "State ID"
 	ruleColumnKeyRegex      = "Regex"
 	ruleColumnKeyActions    = "Actions"
 	ruleColumnKeyIgnoreCase = "Ignore Case"
 	ruleColumnKeyEnabled    = "Enabled"
 	ruleColumnKeyPosition   = "Position"
+	ruleColumnKeyScreenshot = "Screenshot"
+	ruleColumnKeyOcrText    = "Ocr Text"
 )
 
 type RuleModel struct {
-	StateId          string
+	Screenshot       string
 	RegexString      string
 	RuleName         string
 	ChosenActionList []string
@@ -75,15 +76,15 @@ func InitialRuleModel(interactiveData common.InteractiveData) RuleModel {
 		startDynamicView = ""
 	}
 
-	var regexString, ocrText string
+	var regexString, ocrText, screenshot string
 	var chosenActionList []string
 	ignoreCase := true
 	enabled := true
 	if ruleName != "" {
-		stateId, regexString, chosenActionList, ignoreCase, enabled, ocrText, err = fetchRule(ruleName)
+		regexString, chosenActionList, ignoreCase, enabled, ocrText, screenshot, err = fetchRule(ruleName)
 	} else {
 		if stateId != "" {
-			ocrText, err = fetchOcrTextFromState(stateId)
+			ocrText, screenshot, err = fetchOcrTextFromState(stateId)
 		}
 	}
 	if err != nil {
@@ -139,7 +140,6 @@ func InitialRuleModel(interactiveData common.InteractiveData) RuleModel {
 
 	tableColumns := []blocks.TableColumn{
 		{Title: ruleColumnKeyName, Size: 2},
-		{Title: ruleColumnKeyState, Size: 1},
 		{Title: ruleColumnKeyRegex, Size: 2},
 		{Title: ruleColumnKeyActions, Size: 4},
 		{Title: ruleColumnKeyIgnoreCase, Size: 1},
@@ -156,7 +156,7 @@ func InitialRuleModel(interactiveData common.InteractiveData) RuleModel {
 	return RuleModel{
 		RuleName:         ruleName,
 		RegexString:      regexString,
-		StateId:          stateId,
+		Screenshot:       screenshot,
 		ChosenActionList: chosenActionList,
 		ocrText:          ocrText,
 		views:            views,
@@ -308,12 +308,13 @@ func (m RuleModel) Update(msg tea.Msg) (RuleModel, tea.Cmd) {
 	case common.EditItemMsg:
 		currentTableData := m.tableModel.GetCurrentRow().Data
 		m.RuleName = currentTableData[ruleColumnKeyName].(string)
-		m.StateId = currentTableData[ruleColumnKeyState].(string)
 		m.RegexString = currentTableData[ruleColumnKeyRegex].(string)
 		chosenActionsStr := currentTableData[ruleColumnKeyActions].(string)
 		m.ChosenActionList = strings.Split(chosenActionsStr, ", ")
 		m.IgnoreCase, _ = currentTableData[ruleColumnKeyIgnoreCase].(bool)
 		m.Enabled, _ = currentTableData[ruleColumnKeyEnabled].(bool)
+		m.Screenshot = currentTableData[ruleColumnKeyScreenshot].(string)
+		m.ocrText = currentTableData[ruleColumnKeyOcrText].(string)
 		m.ruleResourceData.SetValue(ruleColumnKeyName, m.RuleName)
 		m.ruleResourceData.SetValue(ruleColumnKeyRegex, m.RegexString)
 		m.ruleResourceData.SetValue(ruleColumnKeyActions, chosenActionsStr)
@@ -322,11 +323,6 @@ func (m RuleModel) Update(msg tea.Msg) (RuleModel, tea.Cmd) {
 		m.ruleNameInput.SetValue(m.RuleName)
 		m.regexInput.SetValue(m.RegexString)
 		m.actionListEditor.SetSelected(m.ChosenActionList)
-		var err error
-		m.ocrText, err = fetchOcrTextFromState(m.StateId)
-		if err != nil {
-			m.StatusMessage = getStatusMessage(err.Error(), true)
-		}
 		m.updateRegex(m.RegexString)
 		m.CurrentView = dataView
 		m.DynamicView = ""
@@ -518,11 +514,9 @@ func (m RuleModel) generateJson() []byte {
 }
 
 func (m RuleModel) generateResource() model.Rule {
-	stateId, _ := strconv.Atoi(m.StateId)
-
 	return model.Rule{
 		Name:       m.RuleName,
-		StateId:    stateId,
+		Screenshot: m.Screenshot,
 		Regex:      m.RegexString,
 		Actions:    m.ChosenActionList,
 		IgnoreCase: m.IgnoreCase,
@@ -535,13 +529,12 @@ func (m *RuleModel) UpdateStateData(stateId string) {
 	m.RegexString = ""
 	m.ChosenActionList = []string{}
 	m.IgnoreCase = true
-	m.StateId = stateId
 	m.ruleResourceData.SetValue(ruleColumnKeyName, m.RuleName)
 	m.ruleResourceData.SetValue(ruleColumnKeyRegex, m.RegexString)
 	m.ruleResourceData.SetValue(ruleColumnKeyActions, strings.Join(m.ChosenActionList, ", "))
 	m.ruleResourceData.SetValue(ruleColumnKeyIgnoreCase, strconv.FormatBool(m.IgnoreCase))
 	var err error
-	m.ocrText, err = fetchOcrTextFromState(stateId)
+	m.ocrText, m.Screenshot, err = fetchOcrTextFromState(stateId)
 	if err != nil {
 		m.StatusMessage = getStatusMessage(err.Error(), true)
 	}
@@ -607,30 +600,28 @@ func createRegexAndColorOcrText(regexString string, ignoreCase bool, ocrText str
 	return parsedOcrText, nil
 }
 
-func fetchRule(ruleName string) (string, string, []string, bool, bool, string, error) {
+func fetchRule(ruleName string) (string, []string, bool, bool, string, string, error) {
 	responseData, err := api.GetResourceByName("rule", ruleName)
 	if err != nil {
-		return "", "", nil, false, false, "", err
+		return "", nil, false, false, "", "", err
 	}
 	var rulesResponse model.RulesResponse
 	json.Unmarshal(responseData, &rulesResponse)
 
 	rule := rulesResponse.Rules[0]
-	stateId := strconv.Itoa(rule.StateId)
-	ocrText, err := fetchOcrTextFromState(stateId)
 
-	return stateId, rule.Regex, rule.Actions, rule.IgnoreCase, rule.Enabled, ocrText, err
+	return rule.Regex, rule.Actions, rule.IgnoreCase, rule.Enabled, rule.OcrText, rule.Screenshot, err
 }
 
-func fetchOcrTextFromState(stateId string) (string, error) {
+func fetchOcrTextFromState(stateId string) (string, string, error) {
 	responseData, err := api.GetResourceByID("state", stateId)
 	if err != nil {
-		return "", err
+		return "", "", err
 	}
 	var responseObject model.StatesResponse
 	json.Unmarshal(responseData, &responseObject)
 	state := responseObject.States[0]
-	return state.OcrText, nil
+	return state.OcrText, state.Screenshot, nil
 }
 
 func generateRuleTableRows() ([]table.Row, error) {
@@ -643,12 +634,13 @@ func generateRuleTableRows() ([]table.Row, error) {
 	for _, rule := range allRules {
 		tableRow := table.NewRow(table.RowData{
 			ruleColumnKeyName:       rule.Name,
-			ruleColumnKeyState:      strconv.Itoa(rule.StateId),
 			ruleColumnKeyRegex:      rule.Regex,
 			ruleColumnKeyActions:    strings.Join(rule.Actions, ", "),
 			ruleColumnKeyIgnoreCase: rule.IgnoreCase,
 			ruleColumnKeyEnabled:    rule.Enabled,
 			ruleColumnKeyPosition:   rule.Position,
+			ruleColumnKeyScreenshot: rule.Screenshot,
+			ruleColumnKeyOcrText:    rule.OcrText,
 		})
 		tableRows = append(tableRows, tableRow)
 	}

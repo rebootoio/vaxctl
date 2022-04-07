@@ -7,14 +7,16 @@ import (
 	"vaxctl/api"
 )
 
-func GetScreenshot(id string, deviceUID string, filename string) error {
+func GetScreenshot(id string, deviceUID string, ruleName string, filename string) error {
 	var responseData []byte
 	var err error
 
 	if id != "" {
 		responseData, err = api.GetScreenshotByStateId(id)
-	} else {
+	} else if deviceUID != "" {
 		responseData, err = api.GetScreenshotByDeviceUID(deviceUID)
+	} else {
+		responseData, err = api.GetScreenshotByRuleName(ruleName)
 	}
 	if err != nil {
 		return err
