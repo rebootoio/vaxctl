@@ -209,6 +209,8 @@ List of special keys:
 		{"cred", "username", "System", "the device's cred username", "{cred::username}"},
 		{"cred", "password", "System", "the device's cred password", "{cred::password}"},
 		{"metadata", "*", "User", "the value of the nested key from the device's metadata", "{metadata::ANY_KEY}"},
+		{"cred_store", "CRED_NAME::username", "System", "a username from an existing cred", "{cred_store::CRED_NAME::username}"},
+		{"cred_store", "CRED_NAME::password", "System", "a password from an existing cred", "{cred_store::CRED_NAME::password}"},
 	}
 	helpers.PrintTableWithBorders([][]table.Row{attributesTableHeader, attributesTableRows}, attributesTableTitle)
 	return nil
